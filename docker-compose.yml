@@ -1,0 +1,40 @@
+version: "3.7"
+
+services:
+  haproxy:
+    image: haproxy:latest
+    container_name: "haproxy"
+    hostname: "haproxy"
+    restart: always
+    volumes:
+      - ./cfg/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - certificates:/usr/local/etc/haproxy/certificates:ro
+    networks:
+      - default
+      - hapnet
+    ports:
+      - "880:80"
+      - "8443:443"
+
+  certbot:
+    build: .
+    image: davole/certbot:latest
+    container_name: "certbot"
+    hostname: "certbot"
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do . /etc/scripts/renew-certificates.sh ; sleep 12h & wait $${!}; done;'"
+    restart: always
+    volumes:
+      - certificates:/etc/certificates
+      - "380:380"
+    networks:
+      - default
+      - hapnet
+
+networks: 
+  hapnet:
+    name: hapnet
+    external: true
+
+volumes:
+  certificates:
+    external: true
